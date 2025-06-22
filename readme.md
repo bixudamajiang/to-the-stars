@@ -46,6 +46,11 @@
 3. `pnpm build` 生成 epub 文件
 4. `pnpm docs-setup && pnpm docs-deploy` 发布网站
 
+本地搜索
+1. 安装python (阿里源)<https://mirrors.aliyun.com/python-release/> | (官方源)<https://www.python.org/>
+2. 运行`./build_index.py`生成 json 文件
+3. 运行`./search.py`进行搜索
+
 注意
 
 目前仅修正拼写错误，翻译问题无力解决，希望有大佬帮忙重新校对一下。
