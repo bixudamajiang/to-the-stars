@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>本地JSON正则搜索 - 星辰之上</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+      min-height: 100vh;
+      padding: 20px;
+      color: #e6e6e6;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: rgba(25, 25, 35, 0.9);
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+    
+    header {
+      background: linear-gradient(to right, #4e54c8, #8f94fb);
+      color: white;
+      padding: 25px 40px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    header::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+      transform: rotate(30deg);
+      pointer-events: none;
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .subtitle {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      max-width: 600px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .file-upload-container {
+      padding: 30px;
+      background: rgba(30, 30, 40, 0.7);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      text-align: center;
+    }
+    
+    .upload-box {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 25px;
+      background: rgba(40, 40, 55, 0.8);
+      border-radius: 15px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+      border: 2px dashed rgba(110, 110, 200, 0.5);
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    
+    .upload-box:hover {
+      border-color: rgba(150, 150, 250, 0.8);
+      transform: translateY(-3px);
+    }
+    
+    .upload-box i {
+      font-size: 3rem;
+      color: #8f94fb;
+      margin-bottom: 15px;
+    }
+    
+    .upload-box h2 {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+      color: #e6e6e6;
+    }
+    
+    .upload-box p {
+      color: #a0a0b0;
+      margin-bottom: 20px;
+    }
+    
+    #fileInput {
+      display: none;
+    }
+    
+    .file-info {
+      margin-top: 20px;
+      padding: 10px;
+      background: rgba(35, 35, 45, 0.8);
+      border-radius: 8px;
+      display: none;
+    }
+    
+    .search-container {
+      padding: 30px;
+      background: rgba(30, 30, 40, 0.7);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: none;
+    }
+    
+    .search-box {
+      display: flex;
+      max-width: 800px;
+      margin: 0 auto;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+      border-radius: 50px;
+      overflow: hidden;
+      background: rgba(40, 40, 55, 0.8);
+    }
+    
+    #regexInput {
+      flex: 1;
+      padding: 18px 25px;
+      font-size: 1.1rem;
+      border: none;
+      outline: none;
+      background: rgba(35, 35, 45, 0.8);
+      color: #f0f0f0;
+    }
+    
+    #regexInput::placeholder {
+      color: #a0a0b0;
+    }
+    
+    #searchButton {
+      background: linear-gradient(to right, #ff416c, #ff4b2b);
+      color: white;
+      border: none;
+      padding: 0 35px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    #searchButton:hover {
+      background: linear-gradient(to right, #ff4b2b, #ff416c);
+      transform: scale(1.02);
+    }
+    
+    .regex-info {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 0.9rem;
+      color: #a0a0b0;
+      padding: 0 10px;
+    }
+    
+    .regex-info code {
+      background: rgba(80, 80, 120, 0.5);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #ffcc00;
+    }
+    
+    .results-container {
+      padding: 20px;
+      display: none;
+    }
+    
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      background: rgba(40, 40, 55, 0.7);
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    #resultCount {
+      color: #ff4b2b;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+    
+    .sort-options {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .sort-btn {
+      background: rgba(80, 80, 120, 0.5);
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+      font-size: 0.9rem;
+    }
+    
+    .sort-btn.active {
+      background: rgba(100, 100, 200, 0.7);
+    }
+    
+    .file-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    
+    .file-item {
+      background: rgba(35, 35, 45, 0.8);
+      border-radius: 10px;
+      padding: 20px;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(80, 80, 120, 0.3);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .file-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      border-color: rgba(100, 100, 200, 0.5);
+    }
+    
+    .file-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #8f94fb;
+      display: flex;
+      align-items: center;
+    }
+    
+    .file-title i {
+      margin-right: 10px;
+      color: #ff4b2b;
+    }
+    
+    .file-path {
+      font-size: 0.85rem;
+      color: #a0a0b0;
+      margin-bottom: 15px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .file-preview {
+      font-size: 0.95rem;
+      color: #c0c0d0;
+      line-height: 1.6;
+      margin-bottom: 15px;
+      flex-grow: 1;
+      overflow: hidden;
+      position: relative;
+      max-height: 120px;
+    }
+    
+    .file-preview::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background: linear-gradient(to bottom, rgba(35,35,45,0), rgba(35,35,45,0.9));
+    }
+    
+    .match-count {
+      display: inline-block;
+      background: linear-gradient(to right, #ff416c, #ff4b2b);
+      color: white;
+      border-radius: 12px;
+      padding: 4px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    
+    .highlight {
+      background-color: rgba(255, 200, 0, 0.3);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-weight: 600;
+      color: #ffcc00;
+    }
+    
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      grid-column: 1 / -1;
+    }
+    
+    .no-results i {
+      font-size: 4rem;
+      color: #4e54c8;
+      opacity: 0.5;
+      margin-bottom: 20px;
+    }
+    
+    .no-results p {
+      font-size: 1.2rem;
+      color: #a0a0b0;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      grid-column: 1 / -1;
+    }
+    
+    .spinner {
+      border: 4px solid rgba(255,255,255,0.1);
+      border-left-color: #8f94fb;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+    }
+    
+    .view-btn {
+      background: rgba(80, 80, 120, 0.5);
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+      font-size: 0.9rem;
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .view-btn:hover {
+      background: rgba(100, 100, 200, 0.7);
+    }
+    
+    .error-message {
+      background: rgba(200, 50, 50, 0.2);
+      color: #ff8080;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 10px;
+      text-align: center;
+    }
+    
+    @media (max-width: 768px) {
+      .file-list {
+        grid-template-columns: 1fr;
+      }
+      
+      .search-box {
+        flex-direction: column;
+        border-radius: 15px;
+      }
+      
+      #regexInput, #searchButton {
+        width: 100%;
+        border-radius: 0;
+        padding: 15px;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+      
+      .result-header {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1><i class="fas fa-stars"></i> 本地JSON正则搜索 - 星辰之上</h1>
+      <p class="subtitle">上传JSON文件，使用正则表达式在内容中搜索</p>
+    </header>
+    
+    <div class="file-upload-container">
+      <div class="upload-box" id="uploadBox">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <h2>上传JSON索引文件</h2>
+        <p>点击此处选择books.json文件，或将其拖放到此区域</p>
+        <p class="file-info" id="fileInfo"></p>
+        <input type="file" id="fileInput" accept=".json">
+      </div>
+      <div id="errorDisplay" class="error-message" style="display: none;"></div>
+    </div>
+    
+    <div class="search-container" id="searchContainer">
+      <div class="search-box">
+        <input type="text" id="regexInput" placeholder="输入正则表达式（例如：星盟|舰队，第[一二三四五六七八九十]+章）">
+        <button id="searchButton"><i class="fas fa-search"></i> 搜索</button>
+      </div>
+      <div class="regex-info">
+        提示：使用正则表达式进行高级搜索。例如：
+        <code>星盟|舰队</code> 匹配包含 "星盟" 或 "舰队" 的文件，
+        <code>第[一二三四五六七八九十]+章</code> 匹配所有章节标题
+      </div>
+    </div>
+    
+    <div class="results-container" id="resultsContainer">
+      <div class="result-header">
+        <span>搜索结果 (<span id="resultCount">0</span> 个匹配文件)</span>
+        <div class="sort-options">
+          <button id="sortName" class="sort-btn active">按文件名</button>
+          <button id="sortMatches" class="sort-btn">按匹配数</button>
+        </div>
+      </div>
+      
+      <div class="file-list" id="fileList">
+        <div class="no-results">
+          <i class="fas fa-stars"></i>
+          <p>上传JSON文件并输入正则表达式进行搜索</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // DOM元素
+    const uploadBox = document.getElementById('uploadBox');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const regexInput = document.getElementById('regexInput');
+    const searchButton = document.getElementById('searchButton');
+    const fileList = document.getElementById('fileList');
+    const resultCount = document.getElementById('resultCount');
+    const errorDisplay = document.getElementById('errorDisplay');
+    const sortNameBtn = document.getElementById('sortName');
+    const sortMatchesBtn = document.getElementById('sortMatches');
+    const searchContainer = document.getElementById('searchContainer');
+    const resultsContainer = document.getElementById('resultsContainer');
+    
+    // 书籍索引数据
+    let bookIndex = [];
+    let currentSort = 'name'; // 'name' 或 'matches'
+    
+    // 显示错误信息
+    function showError(message) {
+      errorDisplay.textContent = message;
+      errorDisplay.style.display = 'block';
+      setTimeout(() => {
+        errorDisplay.style.display = 'none';
+      }, 5000);
+    }
+    
+    // 显示成功信息
+    function showSuccess(message) {
+      errorDisplay.style.backgroundColor = 'rgba(50, 200, 50, 0.2)';
+      errorDisplay.style.color = '#80ff80';
+      errorDisplay.textContent = message;
+      errorDisplay.style.display = 'block';
+      setTimeout(() => {
+        errorDisplay.style.display = 'none';
+        errorDisplay.style.backgroundColor = '';
+        errorDisplay.style.color = '';
+      }, 3000);
+    }
+    
+    // 处理文件上传
+    function handleFileUpload(file) {
+      if (!file) return;
+      
+      if (file.type !== 'application/json') {
+        showError('错误：请选择JSON格式的文件');
+        return;
+      }
+      
+      // 显示加载状态
+      uploadBox.innerHTML = `
+        <div class="loading" style="padding: 20px;">
+          <div class="spinner"></div>
+          <p>正在加载文件...</p>
+        </div>
+      `;
+      
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          
+          if (!Array.isArray(data)) {
+            throw new Error('JSON格式错误：应为数组');
+          }
+          
+          bookIndex = data;
+          console.log(`成功加载 ${bookIndex.length} 条记录`);
+          
+          // 显示文件信息
+          fileInfo.innerHTML = `
+            <i class="fas fa-check-circle" style="color: #4CAF50;"></i>
+            已加载: ${file.name} (${(file.size / 1024).toFixed(1)} KB, ${bookIndex.length} 条记录)
+          `;
+          fileInfo.style.display = 'block';
+          
+          // 恢复上传框样式
+          uploadBox.innerHTML = `
+            <i class="fas fa-cloud-upload-alt"></i>
+            <h2>JSON文件已加载</h2>
+            <p>可以开始搜索了</p>
+          `;
+          uploadBox.style.borderStyle = 'solid';
+          uploadBox.style.borderColor = '#4CAF50';
+          
+          // 显示搜索界面
+          searchContainer.style.display = 'block';
+          resultsContainer.style.display = 'block';
+          
+          // 显示初始提示
+          fileList.innerHTML = `
+            <div class="no-results">
+              <i class="fas fa-stars"></i>
+              <p>输入正则表达式并点击搜索查看结果</p>
+            </div>
+          `;
+          
+          showSuccess('文件加载成功！可以开始搜索');
+          
+        } catch (error) {
+          console.error('解析JSON时出错:', error);
+          uploadBox.innerHTML = `
+            <i class="fas fa-cloud-upload-alt"></i>
+            <h2>上传JSON索引文件</h2>
+            <p>点击此处选择books.json文件，或将其拖放到此区域</p>
+          `;
+          showError(`解析JSON时出错: ${error.message}`);
+        }
+      };
+      
+      reader.onerror = function() {
+        showError('读取文件时出错');
+        uploadBox.innerHTML = `
+          <i class="fas fa-cloud-upload-alt"></i>
+          <h2>上传JSON索引文件</h2>
+          <p>点击此处选择books.json文件，或将其拖放到此区域</p>
+        `;
+      };
+      
+      reader.readAsText(file);
+    }
+    
+    // 安全创建正则表达式
+    function safeCreateRegex(pattern, flags = 'gi') {
+      try {
+        // 处理空模式
+        if (!pattern.trim()) {
+          throw new Error('正则表达式不能为空');
+        }
+        
+        // 处理无效正则表达式
+        return new RegExp(pattern, flags);
+      } catch (error) {
+        showError(`无效的正则表达式: ${error.message}`);
+        return null;
+      }
+    }
+    
+    // 安全高亮文本
+    function highlightMatches(content, regex) {
+      try {
+        // 处理空内容
+        if (!content) return '';
+        
+        // 转义HTML特殊字符
+        const escapedContent = content
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+        
+        // 替换匹配项
+        return escapedContent.replace(regex, match => 
+          `<span class="highlight">${match}</span>`
+        );
+      } catch (error) {
+        console.error('高亮文本时出错:', error);
+        return content;
+      }
+    }
+    
+    // 执行搜索
+    function performSearch() {
+      if (bookIndex.length === 0) {
+        showError('请先上传JSON文件');
+        return;
+      }
+      
+      const regexString = regexInput.value.trim();
+      
+      if (!regexString) {
+        showError('请输入正则表达式');
+        return;
+      }
+      
+      // 显示加载状态
+      fileList.innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>正在搜索...</p>
+        </div>
+      `;
+      
+      // 创建正则表达式
+      const regex = safeCreateRegex(regexString);
+      if (!regex) return;
+      
+      // 执行搜索
+      const results = [];
+      bookIndex.forEach(book => {
+        try {
+          if (regex.test(book.content)) {
+            // 重置正则表达式状态
+            regex.lastIndex = 0;
+            
+            // 获取所有匹配项
+            const matches = book.content.match(regex) || [];
+            
+            // 创建预览文本（高亮匹配内容）
+            const previewText = highlightMatches(
+              book.content.substring(0, 500), 
+              regex
+            );
+            
+            results.push({
+              ...book,
+              preview: previewText,
+              matchCount: matches.length
+            });
+          }
+        } catch (error) {
+          console.error(`处理文件 ${book.title} 时出错:`, error);
+        }
+      });
+      
+      // 排序结果
+      sortResults(results);
+      
+      // 更新结果计数
+      resultCount.textContent = results.length;
+      
+      // 显示结果
+      if (results.length === 0) {
+        fileList.innerHTML = `
+          <div class="no-results">
+            <i class="fas fa-search"></i>
+            <p>没有找到匹配的文件</p>
+            <p>尝试使用不同的正则表达式</p>
+          </div>
+        `;
+      } else {
+        renderResults(results);
+      }
+    }
+    
+    // 排序结果
+    function sortResults(results) {
+      if (currentSort === 'name') {
+        results.sort((a, b) => a.title.localeCompare(b.title));
+      } else {
+        results.sort((a, b) => b.matchCount - a.matchCount);
+      }
+    }
+    
+    // 渲染结果
+    function renderResults(results) {
+      fileList.innerHTML = '';
+      
+      results.forEach(book => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        
+        fileItem.innerHTML = `
+          <div class="file-title">
+            <i class="fas fa-book"></i>
+            ${book.title}
+          </div>
+          <div class="file-path">${book.path}</div>
+          <div class="file-preview">${book.preview}...</div>
+          <div class="actions">
+            <div class="match-count">${book.matchCount} 处匹配</div>
+            <button class="view-btn" data-path="${book.path}">查看章节</button>
+          </div>
+        `;
+        
+        // 添加点击事件处理
+        const viewBtn = fileItem.querySelector('.view-btn');
+        viewBtn.addEventListener('click', function() {
+          alert(`查看章节: ${this.getAttribute('data-path')}\n\n由于安全限制，本地文件无法直接链接。`);
+        });
+        
+        fileList.appendChild(fileItem);
+      });
+    }
+    
+    // 设置排序
+    function setSort(sortType) {
+      currentSort = sortType;
+      
+      // 更新按钮状态
+      sortNameBtn.classList.toggle('active', sortType === 'name');
+      sortMatchesBtn.classList.toggle('active', sortType === 'matches');
+      
+      // 重新排序并渲染结果
+      const results = Array.from(fileList.querySelectorAll('.file-item'))
+        .map(item => {
+          const title = item.querySelector('.file-title').textContent.trim();
+          const matchCount = parseInt(item.querySelector('.match-count').textContent);
+          const path = item.querySelector('.file-path').textContent;
+          const preview = item.querySelector('.file-preview').innerHTML;
+          const dataPath = item.querySelector('.view-btn').getAttribute('data-path');
+          
+          return {
+            title,
+            path,
+            preview,
+            matchCount,
+            dataPath
+          };
+        });
+      
+      if (results.length > 0) {
+        sortResults(results);
+        renderResults(results);
+      }
+    }
+    
+    // 事件监听
+    // 点击上传区域触发文件选择
+    uploadBox.addEventListener('click', () => {
+      fileInput.click();
+    });
+    
+    // 文件选择变化
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFileUpload(e.target.files[0]);
+      }
+    });
+    
+    // 拖放功能
+    uploadBox.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadBox.style.borderColor = '#8f94fb';
+      uploadBox.style.transform = 'scale(1.02)';
+    });
+    
+    uploadBox.addEventListener('dragleave', () => {
+      uploadBox.style.borderColor = '';
+      uploadBox.style.transform = '';
+    });
+    
+    uploadBox.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadBox.style.borderColor = '';
+      uploadBox.style.transform = '';
+      
+      if (e.dataTransfer.files.length > 0) {
+        handleFileUpload(e.dataTransfer.files[0]);
+      }
+    });
+    
+    // 搜索按钮事件
+    searchButton.addEventListener('click', performSearch);
+    
+    // 支持按Enter键搜索
+    regexInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        performSearch();
+      }
+    });
+    
+    // 排序按钮事件
+    sortNameBtn.addEventListener('click', () => setSort('name'));
+    sortMatchesBtn.addEventListener('click', () => setSort('matches'));
+    
+    // 示例正则表达式
+    regexInput.value = '星盟|舰队';
+    
+    // 初始提示
+    fileList.innerHTML = `
+      <div class="no-results">
+        <i class="fas fa-stars"></i>
+        <p>上传JSON文件并输入正则表达式进行搜索</p>
+      </div>
+    `;
+  </script>
+</body>
+</html>
