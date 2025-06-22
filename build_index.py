@@ -1,6 +1,5 @@
 import os
 import json
-import hashlib
 import sys
 from pathlib import Path, PurePath
 import unicodedata
@@ -19,28 +18,35 @@ def normalize_content(content):
     # Unicode规范化 (NFC形式)
     return unicodedata.normalize('NFC', normalized)
 
+def consistent_json_dump(data, file_path):
+    """生成完全一致的JSON文件（跨平台）"""
+    # 生成紧凑的JSON字符串（无空格）
+    compact_json = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
+    
+    # 保存为UTF-8编码的二进制文件
+    with open(file_path, 'wb') as f:
+        f.write(compact_json.encode('utf-8'))
+    
+    return compact_json
+
 def build_book_index(books_dir, index_file):
-    """构建简洁的书籍JSON索引"""
+    """构建跨平台一致的书籍索引"""
     # 尝试加载现有索引
     existing_index = {}
     if os.path.exists(index_file):
         try:
-            with open(index_file, 'r', encoding='utf-8') as f:
-                for item in json.load(f):
+            with open(index_file, 'rb') as f:
+                raw_data = f.read().decode('utf-8')
+                for item in json.loads(raw_data):
                     # 使用规范化路径作为键
                     norm_path = normalize_path(item['path'])
-                    existing_index[norm_path] = {
-                        'content': item['content'],
-                        'title': item['title'],
-                        'directory': item['directory']
-                    }
+                    existing_index[norm_path] = item
             print(f"✅ 加载现有索引: {len(existing_index)} 个文件记录")
         except Exception as e:
             print(f"⚠️ 加载索引时出错，将重建: {str(e)}")
             existing_index = {}
     
     new_index = []
-    total_files = 0
     new_files = 0
     updated_files = 0
     skipped_files = 0
@@ -49,7 +55,6 @@ def build_book_index(books_dir, index_file):
     for root, _, files in os.walk(books_dir):
         for file in files:
             if not file.lower().endswith('.md'):
-                skipped_files += 1
                 continue
                 
             file_path = Path(root) / file
@@ -65,47 +70,41 @@ def build_book_index(books_dir, index_file):
                 # 规范化路径
                 normalized_path = normalize_path(file_path_str)
                 
-                # 检查是否需要更新
-                existing_entry = existing_index.get(normalized_path)
-                if existing_entry:
-                    # 直接比较内容是否相同
-                    if existing_entry['content'] == normalized_content:
-                        # 使用现有条目
-                        new_index.append({
-                            "path": normalized_path,
-                            "title": existing_entry['title'],
-                            "directory": existing_entry['directory'],
-                            "content": existing_entry['content']
-                        })
-                        skipped_files += 1
-                        continue
-                
-                # 创建新条目
-                new_index.append({
+                # 创建条目
+                entry = {
                     "path": normalized_path,
                     "title": file,
                     "directory": Path(root).name,
                     "content": normalized_content
-                })
+                }
                 
-                total_files += 1
+                # 检查是否需要更新
+                existing_entry = existing_index.get(normalized_path)
                 if existing_entry:
-                    updated_files += 1
+                    # 直接比较内容是否相同
+                    if existing_entry["content"] == normalized_content:
+                        # 使用现有条目
+                        new_index.append(existing_entry)
+                        skipped_files += 1
+                        continue
+                    else:
+                        updated_files += 1
                 else:
                     new_files += 1
                 
+                # 添加新条目
+                new_index.append(entry)
                 print(f"✓ {normalized_path}")
                 
             except Exception as e:
                 print(f"× 错误处理 {file_path_str}: {str(e)}")
-                skipped_files += 1
     
     # 按路径排序确保一致顺序
     new_index.sort(key=lambda x: x['path'])
     
-    # 保存索引到JSON文件
-    with open(index_file, 'w', encoding='utf-8') as f:
-        json.dump(new_index, f, ensure_ascii=False, indent=2)
+    # 保存索引到JSON文件（确保跨平台一致性）
+    print("保存索引...")
+    consistent_json_dump(new_index, index_file)
     
     print(f"\n索引完成!")
     print(f"• 文件总数: {len(new_index)}")
@@ -123,8 +122,13 @@ def main():
     INDEX_FILE = 'books.json'  # 索引文件
     
     print("=" * 60)
-    print("简洁版小说索引构建工具")
+    print("跨平台小说索引构建工具 (最终版)")
     print("=" * 60)
+    print(f"• 操作系统: {sys.platform}")
+    print(f"• Python版本: {sys.version.split()[0]}")
+    print(f"• 小说目录: {BOOKS_DIR}")
+    print(f"• 索引文件: {INDEX_FILE}")
+    print("-" * 60)
     
     # 确保books目录存在
     if not os.path.exists(BOOKS_DIR):
@@ -135,7 +139,7 @@ def main():
     count = build_book_index(BOOKS_DIR, INDEX_FILE)
     
     if count > 0:
-        print("\n✅ 索引构建成功!")
+        print("\n✅ 索引构建成功! 跨平台一致")
     else:
         print("\n⚠️ 未找到可索引文件")
 
