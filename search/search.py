@@ -228,7 +228,7 @@ def interactive_search(index_file):
             print(f"❌ 搜索过程中出错: {str(e)}")
 
 if __name__ == "__main__":
-    INDEX_FILE = 'books.json'
+    INDEX_FILE = "books.json"
     
     # 检查命令行参数
     if len(sys.argv) > 1:

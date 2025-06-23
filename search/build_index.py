@@ -43,7 +43,7 @@ def build_book_index(books_dir, index_file):
                     existing_index[norm_path] = item
             print(f"✅ 加载现有索引: {len(existing_index)} 个文件记录")
         except Exception as e:
-            print(f"⚠️ 加载索引时出错，将重建: {str(e)}")
+            print(f"⚠ 加载索引时出错，将重建: {str(e)}")
             existing_index = {}
     
     new_index = []
@@ -119,7 +119,7 @@ def main():
     """主函数"""
     # 配置路径
     BOOKS_DIR = 'books'        # 小说目录
-    INDEX_FILE = 'books.json'  # 索引文件
+    INDEX_FILE = './search/books.json'  # 索引文件
     
     print("=" * 60)
     print("跨平台小说索引构建工具 (最终版)")
@@ -141,7 +141,7 @@ def main():
     if count > 0:
         print("\n✅ 索引构建成功! 跨平台一致")
     else:
-        print("\n⚠️ 未找到可索引文件")
+        print("\n⚠ 未找到可索引文件")
 
 if __name__ == "__main__":
     main()
